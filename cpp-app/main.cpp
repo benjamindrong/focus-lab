@@ -1,5 +1,5 @@
 #include <SFML/Graphics.hpp>
-#include "core/GameSession.h"
+#include "../core/GameSession.h"
 
 int main() {
     sf::RenderWindow window(sf::VideoMode({800, 600}), "Focus Lab");
