@@ -2,9 +2,18 @@
 #include "IGame.h"
 #include "../metrics/Metrics.h"
 
+#pragma once
+
+#include "IGame.h"
+#include "../metrics/Metrics.h"
+
+#include <cstdlib>
+
 class ReactionGame : public IGame {
 public:
+
     void start() override {
+
         timer = 0.f;
 
         currentRound = 0;
@@ -15,36 +24,49 @@ public:
 
         roundDelay = randomDelay();
 
+        finished = false;
+
         metrics = Metrics{};
     }
 
     void update(float dt) override {
-        timer += dt;
-        metrics.sessionTime += dt;
 
         if (finished)
             return;
 
-        if (waitingForTarget && timer >= roundDelay) {
+        timer += dt;
+
+        metrics.sessionTime += dt;
+
+        if (waitingForTarget &&
+            timer >= roundDelay) {
+
             waitingForTarget = false;
             targetShown = true;
+
             targetTime = timer;
         }
     }
 
     void handleInput(bool spacePressed) override {
+
         if (!spacePressed || finished)
             return;
 
         // false press
         if (!targetShown) {
+
             metrics.falsePresses++;
             return;
         }
 
         // valid reaction
-        float reaction = timer - targetTime;
-        metrics.reactionTimes.push_back(reaction);
+        float reaction =
+            timer - targetTime;
+
+        metrics.reactionTimes.push_back(
+            reaction
+        );
 
         nextRound();
     }
@@ -62,6 +84,7 @@ public:
     }
 
 private:
+
     Metrics metrics;
 
     bool finished = false;
@@ -78,9 +101,11 @@ private:
     float roundDelay = 2.f;
 
     void nextRound() {
+
         currentRound++;
 
         if (currentRound >= maxRounds) {
+
             finished = true;
             return;
         }
@@ -89,11 +114,16 @@ private:
         targetShown = false;
 
         timer = 0.f;
+
         roundDelay = randomDelay();
     }
 
     float randomDelay() {
-        return 1.f + static_cast<float>(rand()) /
-            (static_cast<float>(RAND_MAX / 3.f));
+
+        return 1.f +
+            static_cast<float>(rand()) /
+            (static_cast<float>(
+                RAND_MAX / 3.f
+            ));
     }
 };

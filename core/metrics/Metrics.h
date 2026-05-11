@@ -3,13 +3,18 @@
 //
 
 #pragma once
+
 #include <vector>
 
 struct Metrics {
+
     std::vector<float> reactionTimes;
 
-    int missedInputs = 0;
     int falsePresses = 0;
+    int missedInputs = 0;
+
+    int memoryCorrect = 0;
+    int memoryIncorrect = 0;
 
     float sessionTime = 0.f;
 };

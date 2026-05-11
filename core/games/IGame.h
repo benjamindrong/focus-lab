@@ -3,14 +3,15 @@
 //
 
 #pragma once
-#include "../GameSession.h"
 
 class IGame {
 public:
     virtual ~IGame() = default;
 
     virtual void start() = 0;
+
     virtual void update(float dt) = 0;
+
     virtual void handleInput(bool spacePressed) = 0;
 
     virtual bool isFinished() const = 0;

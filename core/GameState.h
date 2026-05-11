@@ -2,25 +2,25 @@
 // Created by Benjamin Drong on 5/10/26.
 //
 
-#ifndef FOCUSLAB_GAMESTATE_H
-#define FOCUSLAB_GAMESTATE_H
-
-
+#pragma once
 
 struct GameState {
+
     enum class Screen {
         Menu,
         Playing,
         Results
     };
 
-    Screen currentScreen;
+    enum class ActiveGame {
+        None,
+        Reaction,
+        Memory
+    };
 
-    // Example:
-    bool showTarget;
-    int score;
+    Screen screen = Screen::Menu;
+
+    ActiveGame activeGame = ActiveGame::None;
+
+    bool showTarget = false;
 };
-
-
-
-#endif //FOCUSLAB_GAMESTATE_H

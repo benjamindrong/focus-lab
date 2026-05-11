@@ -3,41 +3,131 @@
 //
 
 #pragma once
+
+#include "GameState.h"
+
 #include "games/ReactionGame.h"
-#include <memory>
+#include "games/MemoryGame.h"
+
 #include "metrics/Metrics.h"
 
-struct GameState {
-    enum class Screen {
-        Menu,
-        Playing,
-        Results
-    };
-
-    Screen screen = Screen::Menu;
-};
+#include <memory>
 
 class GameSession {
 public:
+
     void startGame() {
+
+        reactionGame = std::make_unique<ReactionGame>();
+
+        reactionGame->start();
+
+        state.activeGame = GameState::ActiveGame::Reaction;
+
         state.screen = GameState::Screen::Playing;
-        game = std::make_unique<ReactionGame>();
-        game->start();
     }
 
     void update(float dt) {
-        if (game && !game->isFinished()) {
-            game->update(dt);
-        } else if (game && game->isFinished()) {
-            if (auto* rg = game.get()) {
-                metrics = rg->getMetrics();
+
+        if (state.screen !=
+            GameState::Screen::Playing)
+            return;
+
+        // REACTION GAME
+        if (state.activeGame ==
+            GameState::ActiveGame::Reaction &&
+            reactionGame) {
+
+            reactionGame->update(dt);
+
+            state.showTarget =
+                reactionGame
+                    ->isTargetVisible();
+
+            if (reactionGame
+                    ->isFinished()) {
+
+                metrics =
+                    reactionGame
+                        ->getMetrics();
+
+                memoryGame =
+                    std::make_unique<
+                        MemoryGame>();
+
+                memoryGame->start();
+
+                state.activeGame = GameState::ActiveGame::Memory;
+
+                state.showTarget = false;
             }
-            state.screen = GameState::Screen::Results;
+        }
+
+        // MEMORY GAME
+        else if (state.activeGame ==
+                 GameState::ActiveGame::Memory &&
+                 memoryGame) {
+
+            memoryGame->update(dt);
+
+            if (memoryGame
+                    ->isFinished()) {
+
+                const auto& mm =
+                    memoryGame
+                        ->getMetrics();
+
+                metrics.memoryCorrect =
+                    mm.memoryCorrect;
+
+                metrics.memoryIncorrect =
+                    mm.memoryIncorrect;
+
+                state.screen =
+                    GameState::Screen::Results;
+            }
         }
     }
 
-    void handleInput(bool spacePressed) {
-        if (game) game->handleInput(spacePressed);
+    void handleSpacePressed() {
+
+        switch (state.screen) {
+
+            case GameState::Screen::Menu:
+                startGame();
+                break;
+
+            case GameState::Screen::Playing:
+
+                if (state.activeGame ==
+                    GameState::ActiveGame::Reaction &&
+                    reactionGame) {
+
+                    reactionGame
+                        ->handleInput(true);
+                }
+
+                break;
+
+            case GameState::Screen::Results:
+                resetToMenu();
+                break;
+        }
+    }
+
+    void handleNumberPressed(
+        int number
+    ) {
+
+        if (state.activeGame ==
+            GameState::ActiveGame::Memory &&
+            memoryGame) {
+
+            memoryGame
+                ->handleNumberInput(
+                    number
+                );
+        }
     }
 
     const GameState& getState() const {
@@ -48,16 +138,27 @@ public:
         return metrics;
     }
 
-    bool isTargetActive() const {
-        return game && !game->isFinished();
-    }
+private:
 
-    ReactionGame* getReactionGame() {
-        return game.get();
+    void resetToMenu() {
+
+        reactionGame.reset();
+        memoryGame.reset();
+
+        metrics = Metrics{};
+
+        state = GameState{};
     }
 
 private:
+
     GameState state;
-    std::unique_ptr<ReactionGame> game;
+
     Metrics metrics;
+
+    std::unique_ptr<ReactionGame>
+        reactionGame;
+
+    std::unique_ptr<MemoryGame>
+        memoryGame;
 };
