@@ -4,165 +4,281 @@
 
 #pragma once
 
-#include "GameState.h"
-
-#include "games/ReactionGame.h"
-#include "games/MemoryGame.h"
-
-#include "metrics/Metrics.h"
-
 #include <memory>
+#include "settings/GameSettings.h"
+#include "games/MemoryGame.h"
+#include "games/ReactionGame.h"
+#include "metrics/Metrics.h"
+#include "settings/SettingsPersistence.h"
 
 class GameSession {
 public:
-    void startGame() {
-        reactionGame = std::make_unique<ReactionGame>();
+    int selectedSetting = 0;
 
+    void nextSetting() {
+        selectedSetting =
+            (selectedSetting + 1) % 5;
+    }
+
+    void previousSetting() {
+        selectedSetting =
+            (selectedSetting - 1 + 5) % 5;
+    }
+
+    void increaseSelectedSetting() {
+
+        switch (selectedSetting) {
+
+            case 0:
+                tempSettings.memoryRounds++;
+                break;
+
+            case 1:
+                tempSettings.memoryShowDuration += 0.25f;
+                break;
+
+            case 2:
+                tempSettings.reactionRounds++;
+                break;
+
+            case 3:
+                tempSettings.reactionMinDelay += 0.25f;
+                break;
+
+            case 4:
+                tempSettings.reactionMaxDelay += 0.25f;
+                break;
+        }
+    }
+
+    void decreaseSelectedSetting() {
+
+        switch (selectedSetting) {
+
+            case 0:
+                if (tempSettings.memoryRounds > 1)
+                    tempSettings.memoryRounds--;
+                break;
+
+            case 1:
+                if (tempSettings.memoryShowDuration > 0.25f)
+                    tempSettings.memoryShowDuration -= 0.25f;
+                break;
+
+            case 2:
+                if (tempSettings.reactionRounds > 1)
+                    tempSettings.reactionRounds--;
+                break;
+
+            case 3:
+                if (tempSettings.reactionMinDelay > 0.25f)
+                    tempSettings.reactionMinDelay -= 0.25f;
+                break;
+
+            case 4:
+                if (tempSettings.reactionMaxDelay >
+                    tempSettings.reactionMinDelay)
+                    tempSettings.reactionMaxDelay -= 0.25f;
+                break;
+        }
+    }
+
+    enum class Screen {
+        Menu,
+        Playing,
+        Results,
+        Settings
+    };
+
+    enum class ActiveGame {
+        None,
+        Memory,
+        Reaction
+    };
+
+    struct State {
+        Screen screen = Screen::Menu;
+        ActiveGame activeGame = ActiveGame::None;
+    };
+
+    GameSession() {
+        settings = SettingsPersistence::load();
+        tempSettings = settings;
+    }
+
+    // ---------------- FLOW CONTROL ----------------
+
+    void startMemoryGame() {
+        memoryGame = std::make_unique<MemoryGame>(settings);
+        memoryGame->start();
+
+        state.screen = Screen::Playing;
+        state.activeGame = ActiveGame::Memory;
+    }
+
+    void startReactionGame() {
+        reactionGame = std::make_unique<ReactionGame>(settings);
         reactionGame->start();
 
-        state.activeGame = GameState::ActiveGame::Reaction;
-
-        state.screen = GameState::Screen::Playing;
+        state.screen = Screen::Playing;
+        state.activeGame = ActiveGame::Reaction;
     }
 
     void update(float dt) {
-        if (state.screen !=
-            GameState::Screen::Playing)
+        if (state.screen == Screen::Settings)
             return;
 
-        // REACTION GAME
-        if (state.activeGame ==
-            GameState::ActiveGame::Reaction &&
-            reactionGame) {
-            reactionGame->update(dt);
-
-            state.showTarget =
-                    reactionGame
-                    ->isTargetVisible();
-
-            if (reactionGame
-                ->isFinished()) {
-                metrics =
-                        reactionGame
-                        ->getMetrics();
-
-                memoryGame =
-                        std::make_unique<
-                            MemoryGame>();
-
-                memoryGame->start();
-
-                state.activeGame = GameState::ActiveGame::Memory;
-
-                state.showTarget = false;
-            }
-        }
-
-        // MEMORY GAME
-        else if (
-            state.activeGame ==
-            GameState::ActiveGame::Memory &&
-            memoryGame
-        ) {
+        if (state.activeGame == ActiveGame::Memory && memoryGame)
             memoryGame->update(dt);
 
-            if (memoryGame->isFinished()) {
-                const auto &mm =
-                        memoryGame->getMetrics();
+        if (state.activeGame == ActiveGame::Reaction && reactionGame)
+            reactionGame->update(dt);
 
-                metrics.memoryCorrectSequences =
-                        mm.memoryCorrectSequences;
-
-                metrics.memoryIncorrectSequences =
-                        mm.memoryIncorrectSequences;
-
-                state.screen =
-                        GameState::Screen::Results;
-            }
-        }
+        checkGameEnd();
     }
+
+    // ---------------- INPUT ROUTING ----------------
 
     void handleSpacePressed() {
-        switch (state.screen) {
-            case GameState::Screen::Menu:
-                startGame();
-                break;
+        // MENU → start game
+        if (state.screen == Screen::Menu) {
+            startReactionGame(); // or MemoryGame depending on selection logic
+            return;
+        }
 
-            case GameState::Screen::Playing:
-
-                if (state.activeGame ==
-                    GameState::ActiveGame::Reaction &&
-                    reactionGame) {
-                    reactionGame
-                            ->handleInput(true);
-                }
-
-                break;
-
-            case GameState::Screen::Results:
-                resetToMenu();
-                break;
+        // PLAYING → route input
+        if (state.activeGame == ActiveGame::Reaction && reactionGame) {
+            reactionGame->handleSpacePressed();
         }
     }
 
-    void handleNumberPressed(
-        int number
-    ) {
-        if (state.activeGame ==
-            GameState::ActiveGame::Memory &&
-            memoryGame) {
-            memoryGame
-                    ->handleNumberInput(
-                        number
-                    );
-        }
+    void handleNumberPressed(int n) {
+        if (state.activeGame == ActiveGame::Memory && memoryGame)
+            memoryGame->handleNumberInput(n);
     }
 
-    const GameState &getState() const {
+    // ---------------- STATE ACCESS ----------------
+
+    const State &getState() const {
         return state;
     }
 
-    const Metrics &getMetrics() const {
-        return metrics;
+    const Metrics& getMetrics() const {
+        static Metrics combined;
+
+        combined = Metrics{}; // reset
+
+        if (memoryGame) {
+            const auto& m = memoryGame->getMetrics();
+            combined.memoryCorrectSequences = m.memoryCorrectSequences;
+            combined.memoryIncorrectSequences = m.memoryIncorrectSequences;
+            combined.memoryResponseTimes = m.memoryResponseTimes;
+        }
+
+        if (reactionGame) {
+            const auto& r = reactionGame->getMetrics();
+            combined.reactionTimes = r.reactionTimes;
+            combined.reactionFalsePresses = r.reactionFalsePresses;
+        }
+
+        return combined;
     }
 
-    const MemoryGame* getMemoryGame() const {
-        if (state.activeGame != GameState::ActiveGame::Memory)
-            return nullptr;
-
-        return memoryGame.get();
-    }
-
-    const std::vector<int>& getMemorySequence() const {
+    const std::vector<int> &getMemorySequence() const {
         return memoryGame->getSequence();
     }
 
-    MemoryGame::State getMemoryState() const {
+    // ---------------- SETTINGS ----------------
 
-        if (!memoryGame)
-            return MemoryGame::State::Input;
+    void openSettings() {
+        tempSettings = settings;
+        state.screen = Screen::Settings;
+    }
 
-        return memoryGame->getState();
+    void applySettings() {
+        std::cout << "Apply settings called\n";
+        settings = tempSettings;
+
+        SettingsPersistence::save(settings);
+
+        state.screen = Screen::Menu;
+    }
+
+    void cancelSettings() {
+        tempSettings = settings;
+        state.screen = Screen::Menu;
+    }
+
+    void handleSettingsInput(sf::Keyboard::Key key) {
+        if (key == sf::Keyboard::Key::Up)
+            previousSetting();
+
+        if (key == sf::Keyboard::Key::Down)
+            nextSetting();
+
+        if (key == sf::Keyboard::Key::Left)
+            decreaseSelectedSetting();
+
+        if (key == sf::Keyboard::Key::Right)
+            increaseSelectedSetting();
+
+        if (key == sf::Keyboard::Key::Enter) {
+            applySettings();
+        }
+
+        if (key == sf::Keyboard::Key::Escape) {
+            cancelSettings();
+        }
+    }
+
+    bool isReactionTargetVisible() const {
+        if (reactionGame && state.activeGame == ActiveGame::Reaction) {
+            return reactionGame->isReady();
+        }
+        return false;
+    }
+
+    float getReactionRoundTimer() const {
+        if (reactionGame && state.activeGame == ActiveGame::Reaction) {
+            return reactionGame->roundTimer;
+        }
+        return 0.f;
+    }
+
+    bool isReactionReady() const {
+        if (reactionGame && state.activeGame == ActiveGame::Reaction) {
+            return reactionGame->isReady();
+        }
+        return false;
+    }
+
+    ReactionGame *getReactionGame() {
+        return reactionGame.get();
     }
 
 private:
-    void resetToMenu() {
-        reactionGame.reset();
-        memoryGame.reset();
+    void checkGameEnd() {
+        if (state.activeGame == ActiveGame::Memory &&
+            memoryGame && memoryGame->isFinished()) {
+            state.screen = Screen::Results;
+        }
 
-        metrics = Metrics{};
-
-        state = GameState{};
+        if (state.activeGame == ActiveGame::Reaction &&
+            reactionGame && reactionGame->isFinished()) {
+            // Auto start Memory after Reaction finishes
+            state.activeGame = ActiveGame::Memory;
+            memoryGame = std::make_unique<MemoryGame>(settings);
+            memoryGame->start();
+            return;
+        }
     }
 
-private:
-    GameState state;
+public:
+    GameSettings settings;
+    GameSettings tempSettings;
 
-    Metrics metrics;
+    State state;
 
-    std::unique_ptr<ReactionGame>
-    reactionGame;
-
-    std::unique_ptr<MemoryGame>
-    memoryGame;
+    std::unique_ptr<MemoryGame> memoryGame;
+    std::unique_ptr<ReactionGame> reactionGame;
 };

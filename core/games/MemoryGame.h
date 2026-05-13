@@ -1,15 +1,10 @@
-//
-// Created by Benjamin Drong on 5/11/26.
-//
 #pragma once
 
-#include "IGame.h"
+#include "../settings/GameSettings.h"
 #include "../metrics/Metrics.h"
-
 #include <vector>
-#include <cstdlib>
 
-class MemoryGame : public IGame {
+class MemoryGame {
 public:
 
     enum class State {
@@ -17,40 +12,41 @@ public:
         Input
     };
 
-    void start() override {
+    State getState() const { return state; }
+
+    explicit MemoryGame(const GameSettings& settings)
+        : config(settings) {
+    }
+
+    void start() {
 
         metrics = Metrics{};
-
         finished = false;
-        playerIndex = 0;
-        timer = 0.f;
 
+        playerIndex = 0;
         roundEnded = false;
 
-        metrics.memoryRounds = 0;
+        currentRound = 0;
+        maxRounds = config.memoryRounds;
 
         generateSequence();
         state = State::ShowSequence;
+        timer = 0.f;
     }
 
-    void update(float dt) override {
+    void update(float dt) {
 
         if (finished)
             return;
 
         timer += dt;
 
-        if (state == State::ShowSequence) {
+        if (state == State::ShowSequence &&
+            timer >= config.memoryShowDuration) {
 
-            if (timer >= showDuration) {
-                state = State::Input;
-                timer = 0.f;
-            }
+            state = State::Input;
+            timer = 0.f;
         }
-    }
-
-    void handleInput(bool) override {
-        // unused
     }
 
     void handleNumberInput(int number) {
@@ -68,22 +64,18 @@ public:
             if (playerIndex == sequence.size()) {
 
                 metrics.memoryCorrectSequences++;
-                metrics.memoryResponseTimes.push_back(
-                    timer - inputStartTime
-                );
+                metrics.memoryResponseTimes.push_back(timer - inputStartTime);
 
                 endRound();
             }
         }
         else {
-
             metrics.memoryIncorrectSequences++;
-
             endRound();
         }
     }
 
-    bool isFinished() const override {
+    bool isFinished() const {
         return finished;
     }
 
@@ -93,10 +85,6 @@ public:
 
     const std::vector<int>& getSequence() const {
         return sequence;
-    }
-
-    State getState() const {
-        return state;
     }
 
 #ifdef TESTING
@@ -112,10 +100,9 @@ private:
     void endRound() {
 
         roundEnded = true;
+        currentRound++;
 
-        metrics.memoryRounds++;
-
-        if (metrics.memoryRounds >= maxRounds) {
+        if (currentRound >= maxRounds) {
             finished = true;
             return;
         }
@@ -137,7 +124,9 @@ private:
 
     void generateSequence() {
 
-        int length = 3 + (rand() % 3);
+        int length =
+            config.memoryMinSequence +
+            (rand() % (config.memoryMaxSequence - config.memoryMinSequence + 1));
 
         for (int i = 0; i < length; i++) {
             sequence.push_back(1 + rand() % 9);
@@ -146,21 +135,21 @@ private:
 
 private:
 
+    GameSettings config;
+
     std::vector<int> sequence;
 
     State state;
 
+    Metrics metrics;
+
     int playerIndex = 0;
+    int currentRound = 0;
+    int maxRounds = 5;
 
     bool finished = false;
     bool roundEnded = false;
 
     float timer = 0.f;
-    float showDuration = 1.5f;
-
     float inputStartTime = 0.f;
-
-    Metrics metrics;
-
-    int maxRounds = 5;
 };

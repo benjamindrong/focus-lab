@@ -23,4 +23,6 @@ struct Metrics {
     int memoryCorrectSequences = 0;
     int memoryIncorrectSequences = 0;
 
+    int reactionFalsePresses = 0;
+
 };

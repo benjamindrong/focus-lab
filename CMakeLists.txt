@@ -8,6 +8,16 @@ find_package(SFML 3 REQUIRED COMPONENTS Graphics Window System)
 add_executable(
         FocusLab
         cpp-app/main.cpp
+        core/settings/GameSettings.h
+        core/settings/SettingsPersistence.cpp
+        core/settings/SettingsPersistence.h
+        core/platform/FileSystem.h
+        core/platform/PlatformPaths.h
+        core/platform/PlatformPaths_mac.mm
+)
+
+target_sources(FocusLab PRIVATE
+        core/platform/PlatformPaths_mac.mm
 )
 
 target_link_libraries(
@@ -16,6 +26,7 @@ target_link_libraries(
         SFML::Graphics
         SFML::Window
         SFML::System
+        "-framework Foundation"
 )
 
 # ---------------- TESTING ----------------

@@ -1,82 +1,65 @@
 #pragma once
-#include "IGame.h"
-#include "../metrics/Metrics.h"
 
-#pragma once
-
-#include "IGame.h"
+#include "../settings/GameSettings.h"
 #include "../metrics/Metrics.h"
 
 #include <cstdlib>
+#include <iostream>
 
-class ReactionGame : public IGame {
+class ReactionGame {
 public:
 
-    void start() override {
+    float roundTimer = 0.f;
+    float waitDuration = 0.f;
 
-        timer = 0.f;
-
-        currentRound = 0;
-        maxRounds = 5;
-
-        waitingForTarget = true;
-        targetShown = false;
-
-        roundDelay = randomDelay();
-
-        finished = false;
-
-        metrics = Metrics{};
+    explicit ReactionGame(const GameSettings& settings)
+        : config(settings) {
     }
 
-    void update(float dt) override {
+    void start() {
+        metrics = Metrics{};
+        finished = false;
+
+        currentRound = 0;
+        maxRounds = config.reactionRounds;
+
+        resetRound();   // This is key
+    }
+
+    void update(float dt) {
+
+        if (finished) return;
+
+        roundTimer += dt;
+
+        if (!waitingForInput && roundTimer >= waitDuration) {
+            waitingForInput = true;
+            reactionStartTime = roundTimer;
+        }
+    }
+
+    void handleSpacePressed() {
 
         if (finished)
             return;
 
-        timer += dt;
-
-        metrics.sessionTime += dt;
-
-        if (waitingForTarget &&
-            timer >= roundDelay) {
-
-            waitingForTarget = false;
-            targetShown = true;
-
-            targetTime = timer;
-        }
-    }
-
-    void handleInput(bool spacePressed) override {
-
-        if (!spacePressed || finished)
-            return;
-
-        // false press
-        if (!targetShown) {
-
-            metrics.falsePresses++;
+        if (!waitingForInput) {
+            metrics.reactionFalsePresses++;
             return;
         }
 
-        // valid reaction
-        float reaction =
-            timer - targetTime;
+        float reactionTime = roundTimer - reactionStartTime;
+        metrics.reactionTimes.push_back(reactionTime);
 
-        metrics.reactionTimes.push_back(
-            reaction
-        );
-
-        nextRound();
+        endRound();
     }
 
-    bool isFinished() const override {
+    bool isReady() const {
+        return waitingForInput;
+    }
+
+    bool isFinished() const {
         return finished;
-    }
-
-    bool isTargetVisible() const {
-        return targetShown;
     }
 
     const Metrics& getMetrics() const {
@@ -85,45 +68,43 @@ public:
 
 private:
 
-    Metrics metrics;
-
-    bool finished = false;
-
-    bool waitingForTarget = true;
-    bool targetShown = false;
-
-    float timer = 0.f;
-    float targetTime = 0.f;
-
-    int currentRound = 0;
-    int maxRounds = 5;
-
-    float roundDelay = 2.f;
-
-    void nextRound() {
+    void endRound() {
 
         currentRound++;
 
         if (currentRound >= maxRounds) {
-
             finished = true;
             return;
         }
 
-        waitingForTarget = true;
-        targetShown = false;
-
-        timer = 0.f;
-
-        roundDelay = randomDelay();
+        resetRound();
     }
 
-    float randomDelay() {
-
-        return 1.f +
-            static_cast<float>(rand()) /
-            (static_cast<float>(
-                RAND_MAX / 3.f
-            ));
+    void resetRound() {
+        waitingForInput = false;
+        roundTimer = 0.f;
+        waitDuration = getRandomDelay();
+        reactionStartTime = 0.f;
     }
+
+    float getRandomDelay() {
+        return config.reactionMinDelay +
+               (rand() / (float)RAND_MAX) *
+               (config.reactionMaxDelay - config.reactionMinDelay);
+    }
+
+private:
+
+    GameSettings config;
+    Metrics metrics;
+
+    int currentRound = 0;
+    int maxRounds = 5;
+
+    bool finished = false;
+    bool waitingForInput = false;
+
+    float timer = 0.f;
+    float targetTime = 0.f;
+    float reactionStartTime = 0.f;
 };

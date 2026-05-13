@@ -3,12 +3,16 @@
 
 #include <cmath>
 #include <optional>
+#include "../core/metrics/Metrics.h"
+#include <ctime>
 
 int main() {
     sf::RenderWindow window(
         sf::VideoMode({800, 600}),
         "Focus Lab"
     );
+
+    srand(static_cast<unsigned>(time(nullptr)));
 
     GameSession game;
 
@@ -41,6 +45,9 @@ int main() {
 
     sf::Clock clock;
 
+    sf::Text settingsText(font, "", 28);
+    settingsText.setPosition({120.f, 120.f});
+
     while (window.isOpen()) {
         float dt = clock.restart().asSeconds();
 
@@ -49,12 +56,16 @@ int main() {
                 window.close();
             }
 
-            if (const auto *key =
-                    event->getIf<sf::Event::KeyPressed>()) {
-                if (key->code ==
-                    sf::Keyboard::Key::Space) {
+            if (const auto *key = event->getIf<sf::Event::KeyPressed>()) {
+                if (key->code == sf::Keyboard::Key::Space) {
                     game.handleSpacePressed();
                 }
+
+                if (key->code == sf::Keyboard::Key::Tab) {
+                    game.openSettings();
+                }
+
+                game.handleSettingsInput(key->code);
 
                 if (key->code >= sf::Keyboard::Key::Num1 &&
                     key->code <= sf::Keyboard::Key::Num9) {
@@ -72,71 +83,96 @@ int main() {
         window.clear();
 
         // MENU
-        if (game.getState().screen ==
-            GameState::Screen::Menu) {
+        if (game.getState().screen == GameSession::Screen::Menu) {
             window.draw(title);
             window.draw(start);
         }
 
         // PLAYING
         else if (
-            game.getState().screen ==
-            GameState::Screen::Playing
+            game.getState().screen == GameSession::Screen::Playing
         ) {
             // REACTION GAME
-            if (
-                game.getState().activeGame ==
-                GameState::ActiveGame::Reaction
-            ) {
+            if (game.getState().activeGame == GameSession::ActiveGame::Reaction) {
                 window.draw(playing);
 
-                if (game.getState().showTarget) {
-                    float gameTime =
-                            game.getMetrics().sessionTime;
-
-                    float x =
-                            200.f +
-                            std::sin(gameTime * 3.f) * 100.f;
-
-                    float y =
-                            250.f +
-                            std::cos(gameTime * 2.f) * 80.f;
-
-                    target.setPosition({x, y});
-
+                if (game.reactionGame && game.reactionGame->isReady()) {
+                    target.setPosition({300.f, 250.f});
                     window.draw(target);
                 }
             }
-
             // MEMORY GAME
-            else if (
-                game.getState().activeGame ==
-                GameState::ActiveGame::Memory
-            ) {
-                const auto& m = game.getMetrics();
-                auto seq = game.getMemorySequence();
-
-                std::string text = "MEMORY TEST\n";
-
-                if (game.getMemoryState() ==
-                    MemoryGame::State::ShowSequence) {
-                    text += "Memorize:\n";
-
-                    for (int n: seq) {
-                        text += std::to_string(n) + " ";
-                    }
-                } else {
-                    text += "Enter sequence...";
-                }
-
-                memoryText.setString(text);
+            else if (game.getState().activeGame == GameSession::ActiveGame::Memory) {
                 window.draw(memoryText);
+
+                if (game.memoryGame) {
+                    const auto &seq = game.memoryGame->getSequence();
+                    std::string text = "MEMORY TEST\n";
+
+                    if (game.memoryGame->getState() == MemoryGame::State::ShowSequence) {
+                        // you need this getter
+                        text += "Memorize:\n";
+                        for (int n: seq) {
+                            text += std::to_string(n) + " ";
+                        }
+                    } else {
+                        text += "Enter the sequence...";
+                    }
+
+                    memoryText.setString(text);
+                }
             }
+        } else if (
+            game.getState().screen ==
+            GameSession::Screen::Settings
+        ) {
+            std::string text =
+                    "SETTINGS\n\n";
+
+            text +=
+                    (game.selectedSetting == 0 ? "> " : "  ") +
+                    std::string("Memory Rounds: ") +
+                    std::to_string(game.tempSettings.memoryRounds) +
+                    "\n";
+
+            text +=
+                    (game.selectedSetting == 1 ? "> " : "  ") +
+                    std::string("Memory Show Time: ") +
+                    std::to_string(game.tempSettings.memoryShowDuration) +
+                    "\n";
+
+            text +=
+                    (game.selectedSetting == 2 ? "> " : "  ") +
+                    std::string("Reaction Rounds: ") +
+                    std::to_string(game.tempSettings.reactionRounds) +
+                    "\n";
+
+            text +=
+                    (game.selectedSetting == 3 ? "> " : "  ") +
+                    std::string("Reaction Min Delay: ") +
+                    std::to_string(game.tempSettings.reactionMinDelay) +
+                    "\n";
+
+            text +=
+                    (game.selectedSetting == 4 ? "> " : "  ") +
+                    std::string("Reaction Max Delay: ") +
+                    std::to_string(game.tempSettings.reactionMaxDelay) +
+                    "\n\n";
+
+            text +=
+                    "UP/DOWN = Select\n"
+                    "LEFT/RIGHT = Adjust\n"
+                    "ENTER = Apply\n"
+                    "ESC = Cancel";
+
+            settingsText.setString(text);
+
+            window.draw(settingsText);
         }
 
         // RESULTS
         else if (game.getState().screen ==
-                 GameState::Screen::Results) {
+                 GameSession::Screen::Results) {
             const auto &m = game.getMetrics();
 
             float average = 0.f;
@@ -154,20 +190,12 @@ int main() {
 
             std::string text =
                     "RESULTS\n\n"
-                    "Rounds: " +
-                    std::to_string(m.reactionTimes.size()) +
+                    "Reaction Rounds: " + std::to_string(m.reactionTimes.size()) +
+                    "\nAvg Reaction: " + std::to_string(average) +
+                    "\nFalse Presses: " + std::to_string(m.reactionFalsePresses) +
 
-                    "\nAverage Reaction: " +
-                    std::to_string(average) +
-
-                    "\nFalse Presses: " +
-                    std::to_string(m.falsePresses) +
-
-                    "\nMemory Correct: " +
-                    std::to_string(m.memoryCorrectSequences) +
-
-                    "\nMemory Incorrect: " +
-                    std::to_string(m.memoryIncorrectSequences);
+                    "\n\nMemory Correct: " + std::to_string(m.memoryCorrectSequences) +
+                    "\nMemory Incorrect: " + std::to_string(m.memoryIncorrectSequences);
 
             results.setString(text);
 
