@@ -1,29 +1,57 @@
 # Focus Lab
 
-A cognitive mini-game prototype exploring attention, reaction timing, impulse control, and task switching patterns through short interactive tests.
+Focus Lab is a cognitive mini-game prototype exploring:
+- reaction timing
+- impulse control
+- memory
+- sustained attention
+- task switching
 
-## Current Features
+The project is designed as an experimental architecture-first codebase with portable gameplay logic separated from rendering and platform concerns.
 
-- SFML 3 rendering
-- Multi-round reaction test
-- False press tracking
-- Reaction timing metrics
-- Results screen
+---
 
-## Planned Features
+# Current Features
 
-- Memory sequence test
-- Task-switching challenge
-- Cognitive profile scoring
-- Kotlin Multiplatform port
+## Reaction Test
+- randomized target delay
+- moving visual stimulus
+- false press tracking
+- multi-round timing collection
+
+## Memory Test
+- number sequence recall
+- success/failure tracking
+
+## Results System
+- aggregated metrics
+- reaction averages
+- memory accuracy reporting
 
 ## Architecture
+- platform-independent core logic
+- SFML rendering frontend
+- centralized session flow
+- unit-tested gameplay systems
 
-/core
-- platform-independent game logic
+---
 
-/cpp-app
-- SFML rendering + input layer
+# Project Structure
 
-Future:
-- Kotlin Multiplatform frontend sharing gameplay logic concepts
+```text
+FocusLab/
+│
+├── core/
+│   ├── games/
+│   ├── metrics/
+│   ├── GameSession.h
+│   └── GameState.h
+│
+├── cpp-app/
+│   └── main.cpp
+│
+├── tests/
+│
+├── docs/
+│
+└── CMakeLists.txt
