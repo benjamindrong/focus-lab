@@ -15,9 +15,7 @@
 
 class GameSession {
 public:
-
     void startGame() {
-
         reactionGame = std::make_unique<ReactionGame>();
 
         reactionGame->start();
@@ -28,7 +26,6 @@ public:
     }
 
     void update(float dt) {
-
         if (state.screen !=
             GameState::Screen::Playing)
             return;
@@ -37,23 +34,21 @@ public:
         if (state.activeGame ==
             GameState::ActiveGame::Reaction &&
             reactionGame) {
-
             reactionGame->update(dt);
 
             state.showTarget =
-                reactionGame
+                    reactionGame
                     ->isTargetVisible();
 
             if (reactionGame
-                    ->isFinished()) {
-
+                ->isFinished()) {
                 metrics =
-                    reactionGame
+                        reactionGame
                         ->getMetrics();
 
                 memoryGame =
-                    std::make_unique<
-                        MemoryGame>();
+                        std::make_unique<
+                            MemoryGame>();
 
                 memoryGame->start();
 
@@ -64,35 +59,31 @@ public:
         }
 
         // MEMORY GAME
-        else if (state.activeGame ==
-                 GameState::ActiveGame::Memory &&
-                 memoryGame) {
-
+        else if (
+            state.activeGame ==
+            GameState::ActiveGame::Memory &&
+            memoryGame
+        ) {
             memoryGame->update(dt);
 
-            if (memoryGame
-                    ->isFinished()) {
+            if (memoryGame->isFinished()) {
+                const auto &mm =
+                        memoryGame->getMetrics();
 
-                const auto& mm =
-                    memoryGame
-                        ->getMetrics();
+                metrics.memoryCorrectSequences =
+                        mm.memoryCorrectSequences;
 
-                metrics.memoryCorrect =
-                    mm.memoryCorrect;
-
-                metrics.memoryIncorrect =
-                    mm.memoryIncorrect;
+                metrics.memoryIncorrectSequences =
+                        mm.memoryIncorrectSequences;
 
                 state.screen =
-                    GameState::Screen::Results;
+                        GameState::Screen::Results;
             }
         }
     }
 
     void handleSpacePressed() {
-
         switch (state.screen) {
-
             case GameState::Screen::Menu:
                 startGame();
                 break;
@@ -102,9 +93,8 @@ public:
                 if (state.activeGame ==
                     GameState::ActiveGame::Reaction &&
                     reactionGame) {
-
                     reactionGame
-                        ->handleInput(true);
+                            ->handleInput(true);
                 }
 
                 break;
@@ -118,30 +108,45 @@ public:
     void handleNumberPressed(
         int number
     ) {
-
         if (state.activeGame ==
             GameState::ActiveGame::Memory &&
             memoryGame) {
-
             memoryGame
-                ->handleNumberInput(
-                    number
-                );
+                    ->handleNumberInput(
+                        number
+                    );
         }
     }
 
-    const GameState& getState() const {
+    const GameState &getState() const {
         return state;
     }
 
-    const Metrics& getMetrics() const {
+    const Metrics &getMetrics() const {
         return metrics;
     }
 
+    const MemoryGame* getMemoryGame() const {
+        if (state.activeGame != GameState::ActiveGame::Memory)
+            return nullptr;
+
+        return memoryGame.get();
+    }
+
+    const std::vector<int>& getMemorySequence() const {
+        return memoryGame->getSequence();
+    }
+
+    MemoryGame::State getMemoryState() const {
+
+        if (!memoryGame)
+            return MemoryGame::State::Input;
+
+        return memoryGame->getState();
+    }
+
 private:
-
     void resetToMenu() {
-
         reactionGame.reset();
         memoryGame.reset();
 
@@ -151,14 +156,13 @@ private:
     }
 
 private:
-
     GameState state;
 
     Metrics metrics;
 
     std::unique_ptr<ReactionGame>
-        reactionGame;
+    reactionGame;
 
     std::unique_ptr<MemoryGame>
-        memoryGame;
+    memoryGame;
 };

@@ -43,3 +43,5 @@ target_link_libraries(
 include(CTest)
 include(Catch)
 catch_discover_tests(FocusLabTests)
+
+target_compile_definitions(FocusLabTests PRIVATE TESTING)
