@@ -43,15 +43,44 @@ FocusLab/
 │
 ├── core/
 │   ├── games/
+│   │   ├── IGame.h
+│   │   ├── MemoryGame.h
+│   │   └── ReactionGame.h
+│   │
 │   ├── metrics/
+│   │   └── Metrics.h
+│   │
+│   ├── platform/
+│   │   ├── FileSystem.h
+│   │   ├── PlatformPaths.h
+│   │   └── PlatformPaths_mac.mm
+│   │
+│   ├── settings/
+│   │   ├── GameSettings.h
+│   │   ├── SettingsPersistence.cpp
+│   │   └── SettingsPersistence.h
+│   │
 │   ├── GameSession.h
 │   └── GameState.h
 │
 ├── cpp-app/
 │   └── main.cpp
 │
-├── tests/
+├── data/
+│   └── settings.json
 │
 ├── docs/
+│   ├── architecture.md
+│   ├── gameplay.md
+│   ├── roadmap.md
+│   └── tests.md
 │
-└── CMakeLists.txt
+├── tests/
+│   ├── GameSessionTests.cpp
+│   ├── MemoryGameTests.cpp
+│   ├── MetricsTests.cpp
+│   └── ReactionGameTests.cpp
+│
+├── .gitignore
+├── CMakeLists.txt
+└── README.md

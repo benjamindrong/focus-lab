@@ -41,7 +41,7 @@ inline fs::path getAppDataDir() {
 inline fs::path getSettingsPath() {
     fs::path dir = getAppDataDir();
     fs::create_directories(dir);
-    return dir / "settings.json";
+    return dir / "data/settings.json";
 }
 
 GameSettings SettingsPersistence::load() {

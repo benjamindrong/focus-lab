@@ -1,109 +1,77 @@
-//
-// Created by Benjamin Drong on 5/13/26.
-//
 #include <catch2/catch_test_macros.hpp>
-
 #include "../core/games/ReactionGame.h"
+#include "../core/settings/GameSettings.h"
 
-TEST_CASE(
-    "ReactionGame starts unfinished",
-    "[reaction]"
-) {
-
-    ReactionGame game;
-
-    game.start();
-
-    REQUIRE_FALSE(
-        game.isFinished()
-    );
+static GameSettings makeTestSettings() {
+    GameSettings s;
+    s.reactionMinDelay = 0.1f;
+    s.reactionMaxDelay = 0.2f;
+    s.reactionRounds = 5;
+    return s;
 }
 
-TEST_CASE(
-    "False presses increment",
-    "[reaction]"
-) {
+TEST_CASE("ReactionGame starts unfinished", "[reaction]") {
 
-    ReactionGame game;
-
+    ReactionGame game(makeTestSettings());
     game.start();
 
-    game.handleInput(true);
-    game.handleInput(true);
-
-    REQUIRE(
-        game.getMetrics().falsePresses == 2
-    );
+    REQUIRE_FALSE(game.isFinished());
 }
 
-TEST_CASE(
-    "Target eventually appears",
-    "[reaction]"
-) {
+TEST_CASE("False presses increment", "[reaction]") {
 
-    ReactionGame game;
+    ReactionGame game(makeTestSettings());
+    game.start();
 
+    game.handleSpacePressed(); // before ready = false press
+    game.handleSpacePressed();
+
+    REQUIRE(game.getMetrics().reactionFalsePresses == 2);
+}
+
+TEST_CASE("Target eventually appears", "[reaction]") {
+
+    ReactionGame game(makeTestSettings());
     game.start();
 
     float elapsed = 0.f;
 
-    while (
-        !game.isTargetVisible() &&
-        elapsed < 10.f
-    ) {
-
+    while (!game.isReady() && elapsed < 10.f) {
         game.update(0.1f);
-
         elapsed += 0.1f;
     }
 
-    REQUIRE(
-        game.isTargetVisible()
-    );
+    REQUIRE(game.isReady());
 }
 
-TEST_CASE(
-    "Successful reaction records time",
-    "[reaction]"
-) {
+TEST_CASE("Successful reaction records time", "[reaction]") {
 
-    ReactionGame game;
-
+    ReactionGame game(makeTestSettings());
     game.start();
 
-    while (!game.isTargetVisible()) {
+    while (!game.isReady()) {
         game.update(0.1f);
     }
 
     game.update(0.2f);
+    game.handleSpacePressed();
 
-    game.handleInput(true);
-
-    REQUIRE_FALSE(
-        game.getMetrics()
-            .reactionTimes.empty()
-    );
+    REQUIRE_FALSE(game.getMetrics().reactionTimes.empty());
 }
 
-TEST_CASE(
-    "Game finishes after max rounds",
-    "[reaction]"
-) {
+TEST_CASE("Game finishes after max rounds", "[reaction]") {
 
-    ReactionGame game;
-
+    ReactionGame game(makeTestSettings());
     game.start();
 
     for (int i = 0; i < 5; i++) {
 
-        while (!game.isTargetVisible()) {
+        while (!game.isReady()) {
             game.update(0.1f);
         }
 
-        game.handleInput(true);
+        game.handleSpacePressed();
     }
 
-    REQUIRE(
-        game.isFinished()
-    );
+    REQUIRE(game.isFinished());
 }

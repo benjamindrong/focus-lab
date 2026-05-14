@@ -10,6 +10,7 @@
 #include "games/ReactionGame.h"
 #include "metrics/Metrics.h"
 #include "settings/SettingsPersistence.h"
+#include <SFML/Window/Keyboard.hpp>
 
 class GameSession {
 public:

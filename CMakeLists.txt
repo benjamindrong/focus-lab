@@ -40,6 +40,8 @@ add_executable(
         tests/ReactionGameTests.cpp
         tests/MemoryGameTests.cpp
         tests/GameSessionTests.cpp
+        core/settings/SettingsPersistence.cpp
+        core/platform/PlatformPaths_mac.mm
 )
 
 target_include_directories(
@@ -49,6 +51,8 @@ target_include_directories(
 target_link_libraries(
         FocusLabTests
         PRIVATE Catch2::Catch2WithMain
+        PRIVATE
+        "-framework Foundation"
 )
 
 include(CTest)

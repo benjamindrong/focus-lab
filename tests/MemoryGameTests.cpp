@@ -2,29 +2,35 @@
 
 #include "../core/games/MemoryGame.h"
 
-static void enterInputState(MemoryGame& game) {
+static void enterInputState(MemoryGame &game) {
     game.forceStateShow();
     game.update(2.0f); // forces transition to Input
 }
 
-TEST_CASE("MemoryGame starts unfinished", "[memory]") {
+static GameSettings makeTestSettings() {
+    GameSettings s;
+    s.memoryRounds = 3;
+    s.memoryShowDuration = 1.5;
+    return s;
+}
 
-    MemoryGame game;
+
+TEST_CASE("MemoryGame starts unfinished", "[memory]") {
+    MemoryGame game(makeTestSettings());
     game.start();
 
     REQUIRE_FALSE(game.isFinished());
 }
 
 TEST_CASE("Full correct sequence counts once", "[memory]") {
-
-    MemoryGame game;
+    MemoryGame game(makeTestSettings());
     game.start();
 
     enterInputState(game);
 
     auto seq = game.getSequence();
 
-    for (int n : seq)
+    for (int n: seq)
         game.handleNumberInput(n);
 
     REQUIRE(game.getMetrics().memoryCorrectSequences == 1);
@@ -32,8 +38,7 @@ TEST_CASE("Full correct sequence counts once", "[memory]") {
 }
 
 TEST_CASE("Wrong input counts failure once", "[memory]") {
-
-    MemoryGame game;
+    MemoryGame game(makeTestSettings());
     game.start();
 
     enterInputState(game);
@@ -45,8 +50,7 @@ TEST_CASE("Wrong input counts failure once", "[memory]") {
 }
 
 TEST_CASE("Partial sequence failure ends round once", "[memory]") {
-
-    MemoryGame game;
+    MemoryGame game(makeTestSettings());
     game.start();
 
     enterInputState(game);
@@ -60,8 +64,7 @@ TEST_CASE("Partial sequence failure ends round once", "[memory]") {
 }
 
 TEST_CASE("Does not double count a single failure", "[memory]") {
-
-    MemoryGame game;
+    MemoryGame game(makeTestSettings());
     game.start();
 
     enterInputState(game);
@@ -74,17 +77,15 @@ TEST_CASE("Does not double count a single failure", "[memory]") {
 }
 
 TEST_CASE("Completes full lifecycle", "[memory]") {
-
-    MemoryGame game;
+    MemoryGame game(makeTestSettings());
     game.start();
 
     enterInputState(game);
 
     for (int i = 0; i < 5; i++) {
-
         auto seq = game.getSequence();
 
-        for (int n : seq)
+        for (int n: seq)
             game.handleNumberInput(n);
 
         if (game.isFinished())
@@ -97,8 +98,7 @@ TEST_CASE("Completes full lifecycle", "[memory]") {
 }
 
 TEST_CASE("Ignores input outside Input state", "[memory]") {
-
-    MemoryGame game;
+    MemoryGame game(makeTestSettings());
     game.start();
 
     game.forceStateShow();

@@ -5,12 +5,17 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <vector>
+#include <algorithm>
+#include <random>
 
 class ReactionGame {
 public:
 
     float roundTimer = 0.f;
     float waitDuration = 0.f;
+
+    std::vector<float> roundDelays;
 
     explicit ReactionGame(const GameSettings& settings)
         : config(settings) {
@@ -23,7 +28,13 @@ public:
         currentRound = 0;
         maxRounds = config.reactionRounds;
 
-        resetRound();   // This is key
+        generateRoundDelays();
+
+        resetRound();
+    }
+
+    const std::vector<float>& getRoundDelays() const {
+        return roundDelays;
     }
 
     void update(float dt) {
@@ -83,14 +94,44 @@ private:
     void resetRound() {
         waitingForInput = false;
         roundTimer = 0.f;
-        waitDuration = getRandomDelay();
+        waitDuration = roundDelays[currentRound];
         reactionStartTime = 0.f;
     }
 
-    float getRandomDelay() {
-        return config.reactionMinDelay +
-               (rand() / (float)RAND_MAX) *
-               (config.reactionMaxDelay - config.reactionMinDelay);
+    void generateRoundDelays() {
+
+        roundDelays.clear();
+
+        if (maxRounds <= 1) {
+            roundDelays.push_back(config.reactionMinDelay);
+            return;
+        }
+
+        float range =
+            config.reactionMaxDelay -
+            config.reactionMinDelay;
+
+        for (int i = 0; i < maxRounds; i++) {
+
+            float t =
+                static_cast<float>(i) /
+                static_cast<float>(maxRounds - 1);
+
+            float delay =
+                config.reactionMinDelay +
+                (range * t);
+
+            roundDelays.push_back(delay);
+        }
+
+        std::random_device rd;
+        std::mt19937 g(rd());
+
+        std::shuffle(
+            roundDelays.begin(),
+            roundDelays.end(),
+            g
+        );
     }
 
 private:

@@ -10,7 +10,7 @@ Goals:
 - evaluate consistency
 
 Current implementation:
-- 5 rounds
+- Adjustable number of rounds
 - randomized delay
 - moving visual target
 

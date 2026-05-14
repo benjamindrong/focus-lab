@@ -1,7 +1,7 @@
 {
-    "memoryRounds": 7,
+    "memoryRounds": 3,
     "memoryShowDuration": 1.5,
     "reactionMaxDelay": 2.0,
     "reactionMinDelay": 0.5,
-    "reactionRounds": 1
+    "reactionRounds": 3
 }

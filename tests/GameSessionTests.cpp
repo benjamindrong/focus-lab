@@ -14,7 +14,7 @@ TEST_CASE(
 
     REQUIRE(
         session.getState().screen ==
-        GameState::Screen::Menu
+        GameSession::Screen::Menu
     );
 }
 
@@ -29,7 +29,7 @@ TEST_CASE(
 
     REQUIRE(
         session.getState().screen ==
-        GameState::Screen::Playing
+        GameSession::Screen::Playing
     );
 }
 
@@ -44,6 +44,6 @@ TEST_CASE(
 
     REQUIRE(
         session.getState().screen ==
-        GameState::Screen::Playing
+        GameSession::Screen::Playing
     );
 }
