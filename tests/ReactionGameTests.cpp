@@ -10,17 +10,16 @@ static GameSettings makeTestSettings() {
     return s;
 }
 
-TEST_CASE("ReactionGame starts unfinished", "[reaction]") {
 
-    ReactionGame game(makeTestSettings());
+TEST_CASE("ReactionGame starts unfinished", "[reaction]") {
+    ReactionGame game(makeTestSettings(), 12345);
     game.start();
 
     REQUIRE_FALSE(game.isFinished());
 }
 
 TEST_CASE("False presses increment", "[reaction]") {
-
-    ReactionGame game(makeTestSettings());
+    ReactionGame game(makeTestSettings(), 12345);
     game.start();
 
     game.handleSpacePressed(); // before ready = false press
@@ -30,28 +29,27 @@ TEST_CASE("False presses increment", "[reaction]") {
 }
 
 TEST_CASE("Target eventually appears", "[reaction]") {
-
-    ReactionGame game(makeTestSettings());
+    ReactionGame game(makeTestSettings(), 12345);
     game.start();
 
-    float elapsed = 0.f;
+    game.forceAdvanceToStimulus();
 
-    while (!game.isReady() && elapsed < 10.f) {
-        game.update(0.1f);
-        elapsed += 0.1f;
-    }
-
-    REQUIRE(game.isReady());
+    REQUIRE(
+        game.getPhase() ==
+        ReactionGame::Phase::StimulusVisible
+    );
 }
 
 TEST_CASE("Successful reaction records time", "[reaction]") {
-
-    ReactionGame game(makeTestSettings());
+    ReactionGame game(makeTestSettings(), 12345);
     game.start();
 
-    while (!game.isReady()) {
-        game.update(0.1f);
-    }
+    game.forceAdvanceToStimulus();
+
+    REQUIRE(
+        game.getPhase() ==
+        ReactionGame::Phase::StimulusVisible
+    );
 
     game.update(0.2f);
     game.handleSpacePressed();
@@ -60,15 +58,16 @@ TEST_CASE("Successful reaction records time", "[reaction]") {
 }
 
 TEST_CASE("Game finishes after max rounds", "[reaction]") {
-
-    ReactionGame game(makeTestSettings());
+    ReactionGame game(makeTestSettings(), 12345);
     game.start();
 
     for (int i = 0; i < 5; i++) {
+        game.forceAdvanceToStimulus();
 
-        while (!game.isReady()) {
-            game.update(0.1f);
-        }
+        REQUIRE(
+            game.getPhase() ==
+            ReactionGame::Phase::StimulusVisible
+        );
 
         game.handleSpacePressed();
     }
@@ -80,7 +79,6 @@ TEST_CASE(
     "ReactionGame uses configured round plan",
     "[reaction]"
 ) {
-
     GameSettings settings;
 
     settings.reactionRounds = 3;
@@ -100,9 +98,12 @@ TEST_CASE(
         ReactionRoundType::Standard
     );
 
-    while (!game.isReady()) {
-        game.update(0.1f);
-    }
+    game.forceAdvanceToStimulus();
+
+    REQUIRE(
+        game.getPhase() ==
+        ReactionGame::Phase::StimulusVisible
+    );
 
     game.handleSpacePressed();
 
@@ -116,7 +117,6 @@ TEST_CASE(
     "ReactionGame falls back to standard round type",
     "[reaction]"
 ) {
-
     GameSettings settings;
 
     settings.reactionRounds = 3;
@@ -129,9 +129,12 @@ TEST_CASE(
 
     game.start();
 
-    while (!game.isReady()) {
-        game.update(0.1f);
-    }
+    game.forceAdvanceToStimulus();
+
+    REQUIRE(
+        game.getPhase() ==
+        ReactionGame::Phase::StimulusVisible
+    );
 
     game.handleSpacePressed();
 

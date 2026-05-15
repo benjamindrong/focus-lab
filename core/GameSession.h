@@ -20,13 +20,13 @@ public:
 
     void nextSetting() {
         selectedSetting =
-            (selectedSetting + 1) % getSettingCount();
+                (selectedSetting + 1) % getSettingCount();
     }
 
     void previousSetting() {
         selectedSetting =
-            (selectedSetting - 1 + getSettingCount()) %
-            getSettingCount();
+                (selectedSetting - 1 + getSettingCount()) %
+                getSettingCount();
     }
 
     int getReactionRoundCount() const {
@@ -38,9 +38,7 @@ public:
     }
 
     void increaseSelectedSetting() {
-
         switch (selectedSetting) {
-
             case 0:
                 tempSettings.memoryRounds++;
                 break;
@@ -78,9 +76,7 @@ public:
     }
 
     void decreaseSelectedSetting() {
-
         switch (selectedSetting) {
-
             case 0:
                 if (tempSettings.memoryRounds > 1)
                     tempSettings.memoryRounds--;
@@ -109,9 +105,9 @@ public:
 
             case 5: {
                 selectedRoundIndex =
-                    (selectedRoundIndex - 1 +
-                    tempSettings.reactionRoundPlan.size())
-                    % tempSettings.reactionRoundPlan.size();
+                        (selectedRoundIndex - 1 +
+                         tempSettings.reactionRoundPlan.size())
+                        % tempSettings.reactionRoundPlan.size();
                 break;
             }
         }
@@ -197,20 +193,20 @@ public:
         return state;
     }
 
-    const Metrics& getMetrics() const {
+    const Metrics &getMetrics() const {
         static Metrics combined;
 
         combined = Metrics{}; // reset
 
         if (memoryGame) {
-            const auto& m = memoryGame->getMetrics();
+            const auto &m = memoryGame->getMetrics();
             combined.memoryCorrectSequences = m.memoryCorrectSequences;
             combined.memoryIncorrectSequences = m.memoryIncorrectSequences;
             combined.memoryResponseTimes = m.memoryResponseTimes;
         }
 
         if (reactionGame) {
-            const auto& r = reactionGame->getMetrics();
+            const auto &r = reactionGame->getMetrics();
             combined.reactionTimes = r.reactionTimes;
             combined.reactionFalsePresses = r.reactionFalsePresses;
         }
@@ -267,7 +263,8 @@ public:
 
     bool isReactionTargetVisible() const {
         if (reactionGame && state.activeGame == ActiveGame::Reaction) {
-            return reactionGame->isReady();
+            return reactionGame->getPhase() ==
+                   ReactionGame::Phase::StimulusVisible;
         }
         return false;
     }
@@ -281,7 +278,8 @@ public:
 
     bool isReactionReady() const {
         if (reactionGame && state.activeGame == ActiveGame::Reaction) {
-            return reactionGame->isReady();
+            return reactionGame->getPhase() ==
+                   ReactionGame::Phase::StimulusVisible;
         }
         return false;
     }
