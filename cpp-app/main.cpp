@@ -96,7 +96,8 @@ int main() {
             if (game.getState().activeGame == GameSession::ActiveGame::Reaction) {
                 window.draw(playing);
 
-                if (game.reactionGame && game.reactionGame->isReady()) {
+                if (game.reactionGame && game.reactionGame->getPhase() ==
+                   ReactionGame::Phase::StimulusVisible) {
                     target.setPosition({300.f, 250.f});
                     window.draw(target);
                 }

@@ -39,8 +39,8 @@ public:
 
     Phase getPhase() const {
         if (finished) return Phase::Finished;
-        if (!stimulusVisible) return Phase::Waiting;
-        return Phase::StimulusVisible;
+        if (stimulusVisible) return Phase::StimulusVisible;
+        return Phase::Waiting;
     }
 
     int getCurrentRoundIndex() const {
@@ -55,10 +55,12 @@ public:
         : config(settings), rng(seed) {
     }
 
+#ifdef TESTING
     void forceAdvanceToStimulus() {
         roundTimer = waitDuration;
         update(0.f);
     }
+#endif
 
     void start() {
         metrics = Metrics{};
@@ -85,7 +87,6 @@ public:
         if (!stimulusVisible &&
             roundTimer >= waitDuration) {
             stimulusVisible = true;
-            waitingForInput = true;
 
             reactionStartTime = roundTimer;
 
@@ -116,7 +117,7 @@ public:
         if (finished)
             return;
 
-        if (!waitingForInput) {
+        if (!canAcceptInput()) {
             metrics.reactionFalsePresses++;
             return;
         }
@@ -138,10 +139,6 @@ public:
         );
 
         endRound();
-    }
-
-    bool isReady() const {
-        return waitingForInput;
     }
 
     bool isFinished() const {
@@ -173,8 +170,6 @@ private:
     }
 
     void resetRound() {
-        waitingForInput = false;
-
         stimulusVisible = false;
 
         stimulusVisibleTimer = 0.f;
@@ -236,7 +231,10 @@ private:
     int maxRounds = 5;
 
     bool finished = false;
-    bool waitingForInput = false;
+
+    bool canAcceptInput() const {
+        return stimulusVisible;
+    }
 
     float timer = 0.f;
     float targetTime = 0.f;

@@ -261,30 +261,7 @@ public:
         }
     }
 
-    bool isReactionTargetVisible() const {
-        if (reactionGame && state.activeGame == ActiveGame::Reaction) {
-            return reactionGame->getPhase() ==
-                   ReactionGame::Phase::StimulusVisible;
-        }
-        return false;
-    }
-
-    float getReactionRoundTimer() const {
-        if (reactionGame && state.activeGame == ActiveGame::Reaction) {
-            return reactionGame->roundTimer;
-        }
-        return 0.f;
-    }
-
-    bool isReactionReady() const {
-        if (reactionGame && state.activeGame == ActiveGame::Reaction) {
-            return reactionGame->getPhase() ==
-                   ReactionGame::Phase::StimulusVisible;
-        }
-        return false;
-    }
-
-    ReactionGame *getReactionGame() {
+    const ReactionGame* getReactionGame() const {
         return reactionGame.get();
     }
 
