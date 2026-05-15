@@ -11,18 +11,17 @@ struct Metrics {
     std::vector<float> reactionTimes;
     std::vector<float> memoryResponseTimes;
 
-    int falsePresses = 0;
-    int missedInputs = 0;
+    float sessionTime = 0.f;
 
     int memoryCorrect = 0;
     int memoryIncorrect = 0;
-
-    float sessionTime = 0.f;
-
     int memoryRounds = 0;
     int memoryCorrectSequences = 0;
     int memoryIncorrectSequences = 0;
 
+    int falsePresses = 0;
+    int missedInputs = 0;
     int reactionFalsePresses = 0;
+    int reactionMissedTargets = 0;
 
 };

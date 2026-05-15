@@ -160,6 +160,28 @@ int main() {
                     "\n\n";
 
             text +=
+                    (game.selectedSetting == 5 ? "> " : "  ") +
+                    std::string("Reaction Round Plan: ");
+
+            for (int i = 0; i < game.tempSettings.reactionRoundPlan.size(); i++) {
+                if (i == game.selectedRoundIndex)
+                    text += "[";
+
+                text +=
+                (game.tempSettings.reactionRoundPlan[i] ==
+                 ReactionRoundType::Standard
+                     ? "S"
+                     : "T");
+
+                if (i == game.selectedRoundIndex)
+                    text += "] ";
+
+                text += " ";
+            }
+
+            text += "\n";
+
+            text +=
                     "UP/DOWN = Select\n"
                     "LEFT/RIGHT = Adjust\n"
                     "ENTER = Apply\n"

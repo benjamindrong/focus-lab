@@ -75,3 +75,68 @@ TEST_CASE("Game finishes after max rounds", "[reaction]") {
 
     REQUIRE(game.isFinished());
 }
+
+TEST_CASE(
+    "ReactionGame uses configured round plan",
+    "[reaction]"
+) {
+
+    GameSettings settings;
+
+    settings.reactionRounds = 3;
+
+    settings.reactionRoundPlan = {
+        ReactionRoundType::Standard,
+        ReactionRoundType::TargetStimulus,
+        ReactionRoundType::Standard
+    };
+
+    ReactionGame game(settings);
+
+    game.start();
+
+    REQUIRE(
+        game.getCurrentRoundType() ==
+        ReactionRoundType::Standard
+    );
+
+    while (!game.isReady()) {
+        game.update(0.1f);
+    }
+
+    game.handleSpacePressed();
+
+    REQUIRE(
+        game.getCurrentRoundType() ==
+        ReactionRoundType::TargetStimulus
+    );
+}
+
+TEST_CASE(
+    "ReactionGame falls back to standard round type",
+    "[reaction]"
+) {
+
+    GameSettings settings;
+
+    settings.reactionRounds = 3;
+
+    settings.reactionRoundPlan = {
+        ReactionRoundType::TargetStimulus
+    };
+
+    ReactionGame game(settings);
+
+    game.start();
+
+    while (!game.isReady()) {
+        game.update(0.1f);
+    }
+
+    game.handleSpacePressed();
+
+    REQUIRE(
+        game.getCurrentRoundType() ==
+        ReactionRoundType::Standard
+    );
+}

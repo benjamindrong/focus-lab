@@ -9,6 +9,13 @@
 
 #pragma once
 
+#include <vector>
+
+enum class ReactionRoundType {
+    Standard,
+    TargetStimulus
+};
+
 struct GameSettings {
 
     // Reaction game
@@ -21,5 +28,17 @@ struct GameSettings {
     float memoryShowDuration = 1.5f;
     int memoryMinSequence = 3;
     int memoryMaxSequence = 5;
+
+    std::vector<ReactionRoundType> reactionRoundPlan;
+
+    GameSettings() {
+        reactionRoundPlan = {
+            ReactionRoundType::Standard,
+            ReactionRoundType::Standard,
+            ReactionRoundType::Standard,
+            ReactionRoundType::Standard,
+            ReactionRoundType::Standard
+        };
+    }
 };
 

@@ -38,6 +38,14 @@ inline fs::path getAppDataDir() {
 #endif
 }
 
+static int encodeRoundType(ReactionRoundType t) {
+    return static_cast<int>(t);
+}
+
+static ReactionRoundType decodeRoundType(int v) {
+    return static_cast<ReactionRoundType>(v);
+}
+
 inline fs::path getSettingsPath() {
     fs::path dir = getAppDataDir();
     fs::create_directories(dir);
@@ -81,6 +89,28 @@ GameSettings SettingsPersistence::load() {
     settings.reactionMaxDelay =
         j.value("reactionMaxDelay", 3.0f);
 
+    if (j.contains("reactionRoundPlan")) {
+
+        settings.reactionRoundPlan.clear();
+
+        for (auto& v : j["reactionRoundPlan"]) {
+            settings.reactionRoundPlan.push_back(
+                decodeRoundType(v.get<int>())
+            );
+        }
+    }
+
+    if (settings.reactionRoundPlan.empty()) {
+
+        settings.reactionRoundPlan = {
+            ReactionRoundType::Standard,
+            ReactionRoundType::Standard,
+            ReactionRoundType::Standard,
+            ReactionRoundType::Standard,
+            ReactionRoundType::Standard
+        };
+    }
+
     return settings;
 }
 
@@ -112,6 +142,14 @@ void SettingsPersistence::save(
 
     j["reactionMaxDelay"] =
         settings.reactionMaxDelay;
+
+    json plan = json::array();
+
+    for (auto t : settings.reactionRoundPlan) {
+        plan.push_back(encodeRoundType(t));
+    }
+
+    j["reactionRoundPlan"] = plan;
 
     std::cout << j.dump(4) << "\n";
 

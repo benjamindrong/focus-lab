@@ -15,15 +15,26 @@
 class GameSession {
 public:
     int selectedSetting = 0;
+    int selectedRoundIndex = 0;
+    bool editingRoundPlan = false;
 
     void nextSetting() {
         selectedSetting =
-            (selectedSetting + 1) % 5;
+            (selectedSetting + 1) % getSettingCount();
     }
 
     void previousSetting() {
         selectedSetting =
-            (selectedSetting - 1 + 5) % 5;
+            (selectedSetting - 1 + getSettingCount()) %
+            getSettingCount();
+    }
+
+    int getReactionRoundCount() const {
+        return tempSettings.reactionRoundPlan.size();
+    }
+
+    int getSettingCount() const {
+        return 6; // or better: derive properly if you later make settings dynamic
     }
 
     void increaseSelectedSetting() {
@@ -49,6 +60,20 @@ public:
             case 4:
                 tempSettings.reactionMaxDelay += 0.25f;
                 break;
+
+            case 5: {
+                auto &plan = tempSettings.reactionRoundPlan;
+                if (plan.empty()) break;
+
+                auto &type = plan[selectedRoundIndex];
+
+                if (type == ReactionRoundType::Standard)
+                    type = ReactionRoundType::TargetStimulus;
+                else
+                    type = ReactionRoundType::Standard;
+
+                break;
+            }
         }
     }
 
@@ -81,6 +106,14 @@ public:
                     tempSettings.reactionMinDelay)
                     tempSettings.reactionMaxDelay -= 0.25f;
                 break;
+
+            case 5: {
+                selectedRoundIndex =
+                    (selectedRoundIndex - 1 +
+                    tempSettings.reactionRoundPlan.size())
+                    % tempSettings.reactionRoundPlan.size();
+                break;
+            }
         }
     }
 

@@ -17,6 +17,19 @@ public:
 
     std::vector<float> roundDelays;
 
+    ReactionRoundType currentRoundType =
+    ReactionRoundType::Standard;
+
+    ReactionRoundType getCurrentRoundType() const {
+        return currentRoundType;
+    }
+
+    bool stimulusVisible = false;
+    bool currentStimulusIsTarget = false;
+
+    float stimulusVisibleTimer = 0.f;
+    float stimulusVisibleDuration = 1.0f;
+
     explicit ReactionGame(const GameSettings& settings)
         : config(settings) {
     }
@@ -39,13 +52,41 @@ public:
 
     void update(float dt) {
 
-        if (finished) return;
+        if (finished)
+            return;
 
         roundTimer += dt;
 
-        if (!waitingForInput && roundTimer >= waitDuration) {
+        if (!stimulusVisible &&
+            roundTimer >= waitDuration) {
+
+            stimulusVisible = true;
             waitingForInput = true;
+
             reactionStartTime = roundTimer;
+
+            currentStimulusIsTarget =
+                (
+                    currentRoundType ==
+                    ReactionRoundType::TargetStimulus
+                );
+            }
+
+        if (stimulusVisible) {
+
+            stimulusVisibleTimer += dt;
+
+            if (
+                stimulusVisibleTimer >=
+                stimulusVisibleDuration
+            ) {
+
+                if (currentStimulusIsTarget) {
+                    metrics.reactionMissedTargets++;
+                }
+
+                endRound();
+            }
         }
     }
 
@@ -59,8 +100,22 @@ public:
             return;
         }
 
-        float reactionTime = roundTimer - reactionStartTime;
-        metrics.reactionTimes.push_back(reactionTime);
+        if (
+            currentRoundType ==
+            ReactionRoundType::TargetStimulus &&
+            !currentStimulusIsTarget
+        ) {
+
+            metrics.reactionFalsePresses++;
+            return;
+        }
+
+        float reactionTime =
+            roundTimer - reactionStartTime;
+
+        metrics.reactionTimes.push_back(
+            reactionTime
+        );
 
         endRound();
     }
@@ -77,6 +132,14 @@ public:
         return metrics;
     }
 
+    bool isStimulusVisible() const {
+        return stimulusVisible;
+    }
+
+    bool isCurrentStimulusTarget() const {
+        return currentStimulusIsTarget;
+    }
+
 private:
 
     void endRound() {
@@ -91,12 +154,34 @@ private:
         resetRound();
     }
 
-    void resetRound() {
-        waitingForInput = false;
-        roundTimer = 0.f;
-        waitDuration = roundDelays[currentRound];
-        reactionStartTime = 0.f;
+   void resetRound() {
+
+    waitingForInput = false;
+
+    stimulusVisible = false;
+
+    stimulusVisibleTimer = 0.f;
+
+    roundTimer = 0.f;
+
+    waitDuration = roundDelays[currentRound];
+
+    if (
+        currentRound <
+        config.reactionRoundPlan.size()
+    ) {
+
+        currentRoundType =
+            config.reactionRoundPlan[currentRound];
     }
+    else {
+
+        currentRoundType =
+            ReactionRoundType::Standard;
+    }
+
+    reactionStartTime = 0.f;
+}
 
     void generateRoundDelays() {
 
